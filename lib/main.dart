@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.submitButton),
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       ),
+      debugShowCheckedModeBanner: false,
       home: const HomePage(),
     );
   }
