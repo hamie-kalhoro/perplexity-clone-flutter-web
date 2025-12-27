@@ -7,22 +7,21 @@ settings = Settings()
 
 class LLMService:
     def __init__(self):
+        if not settings.GEMINI_API_KEY:
+            print("ERROR: GEMINI_API_KEY is not set in environment")
+            self.client = None
+            self.model_name = None
+            return
+            
         self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model_name = None
 
-        # Prefer stable, non-exp models to avoid sunsets
-        for candidate in [
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-1.0-pro",
-        ]:
-            try:
-                # Lightweight capability check
-                self.client.models.get(name=candidate)
-                self.model_name = candidate
-                break
-            except Exception:
-                continue
+        # Use gemini-1.5-flash as default model
+        self.model_name = "gemini-1.5-flash"
+        print(f"Initialized LLM service with model: {self.model_name}")
+        
+        if not self.model_name:
+            print("ERROR: No valid Gemini model could be initialized. Check API key permissions.")
 
     def generate_response(self, query: str, search_results: list[dict]):
         """Yield response text chunks; on error, yield a human-readable message."""
@@ -52,11 +51,10 @@ class LLMService:
             return
 
         try:
-            stream = self.client.models.generate_content(
+            stream = self.client.models.stream_generate_content(
                 model=self.model_name,
                 contents=full_prompt,
                 config=types.GenerateContentConfig(temperature=0.4),
-                stream=True,
             )
 
             for chunk in stream:
