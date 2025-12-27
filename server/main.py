@@ -40,10 +40,16 @@ async def websocket_chat_endpoint(websocket: WebSocket):
 # chat
 @app.post("/chat")
 def chat_endpoint(body: ChatBody):
-    search_results = search_service.web_search(body.query)
+    try:
+        search_results = search_service.web_search(body.query)
+        sorted_results = sort_source_service.sort_sources(
+            body.query, search_results
+        )
 
-    sorted_results = sort_source_service.sort_sources(body.query, search_results)
+        # Aggregate streamed chunks into a single string for HTTP response
+        chunks = llm_service.generate_response(body.query, sorted_results)
+        full_text = "".join(chunks)
 
-    response = llm_service.generate_response(body.query, sorted_results)
-
-    return response
+        return {"type": "content", "data": full_text, "sources": sorted_results}
+    except Exception as e:
+        return {"error": f"Internal Server Error: {e}"}
